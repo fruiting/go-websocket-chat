@@ -14,11 +14,11 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-// users - map of [user_id => websocket.conn]
-var users map[string]*websocket.Conn
+// rooms - map of rooms
+var rooms map[string]Room
 
 // reader - reads json with new message and writes it into the channel
-func reader(conn *websocket.Conn, messages chan Message) {
+func reader(conn *websocket.Conn, messages chan Message, r *http.Request) {
 	message := Message{}
 	for {
 		err := conn.ReadJSON(&message)
@@ -26,29 +26,37 @@ func reader(conn *websocket.Conn, messages chan Message) {
 			fmt.Println(err)
 		}
 
-		message.User.connection = users[message.User.ID]
+		message.Room = rooms[r.URL.Query()["room"][0]]
 		messages <- message
 	}
 }
 
+// writer - returns message to necessary users
 func writer(messages chan Message) {
 	for {
 		message := <-messages
-		for _, user := range users {
-			user.WriteJSON(message)
+		fmt.Printf("%+v\n", message)
+
+		for _, user := range message.Room.Users {
+			user.connection.WriteJSON(message)
 		}
 	}
 }
 
 // connectUser creates User object with user id and connection and appends it into all users slice
-func connectUser(connection *websocket.Conn) {
-	if users == nil {
-		users = make(map[string]*websocket.Conn)
-	}
-
+func connectUser(connection *websocket.Conn, roomNumber string) {
 	user := User{}
 	connection.ReadJSON(&user)
-	users[user.ID] = connection
+	user.connection = connection
+
+	room := Room{roomNumber, []User{}}
+	if rooms[roomNumber].ID == "" {
+		room = rooms[roomNumber]
+		room.Users = append(room.Users, user)
+	} else {
+		room = Room{roomNumber, []User{user}}
+	}
+	rooms[roomNumber] = room
 }
 
 // Listen function opens connection for users and listens any new messages from them
@@ -62,8 +70,15 @@ func Listen(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	connectUser(websocket)
+	log.Println("Connected...")
+
+	roomNumber := r.URL.Query()["room"][0]
+	connectUser(websocket, roomNumber)
 	messages := make(chan Message)
-	go reader(websocket, messages)
+	go reader(websocket, messages, r)
 	writer(messages)
+}
+
+func init() {
+	rooms = make(map[string]Room)
 }

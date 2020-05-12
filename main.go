@@ -11,6 +11,6 @@ import (
 func main() {
 	fmt.Println("Listening...")
 
-	http.HandleFunc("/ws", app.Listen)
-	log.Fatal(http.ListenAndServe(":8000", nil))
+	http.HandleFunc("/chat", app.Listen)
+	log.Fatal(http.ListenAndServe(":8001", nil))
 }

@@ -2,7 +2,7 @@ package app
 
 // Message structure
 type Message struct {
-	User     User
+	Room     Room
 	Body     string `json:"body"`
 	DateTime string `json:"date_time"`
 }
