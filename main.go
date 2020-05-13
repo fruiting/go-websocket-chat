@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+	"os"
 
 	"github.com/fruiting/go-chat/app"
 	"github.com/joho/godotenv"
@@ -12,10 +15,8 @@ func init() {
 }
 
 func main() {
-	fmt.Println(app.GetMessages("1", 3))
+	fmt.Println("Listening...")
 
-	// fmt.Println("Listening...")
-
-	// http.HandleFunc("/chat", app.Listen)
-	// log.Fatal(http.ListenAndServe(":"+os.Getenv("LISTENER_PORT"), nil))
+	http.HandleFunc("/chat", app.Listen)
+	log.Fatal(http.ListenAndServe(":"+os.Getenv("LISTENER_PORT"), nil))
 }
