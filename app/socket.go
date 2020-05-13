@@ -26,7 +26,9 @@ func reader(conn *websocket.Conn, messages chan Message, r *http.Request) {
 			fmt.Println(err)
 		}
 
-		message.Room = rooms[r.URL.Query()["room"][0]]
+		roomNumber := r.URL.Query()["room"][0]
+		message.Room = rooms[roomNumber]
+		message.Room.ID = roomNumber
 		messages <- message
 	}
 }
@@ -35,8 +37,8 @@ func reader(conn *websocket.Conn, messages chan Message, r *http.Request) {
 func writer(messages chan Message) {
 	for {
 		message := <-messages
-		fmt.Printf("%+v\n", message)
 
+		SaveMessage(message)
 		for _, user := range message.Room.Users {
 			user.connection.WriteJSON(message)
 		}
