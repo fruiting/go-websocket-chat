@@ -1,12 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/fruiting/go-chat/controllers"
+	"github.com/fruiting/go-chat/middlewares"
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
 
@@ -15,10 +16,12 @@ func init() {
 }
 
 func main() {
-	fmt.Println("Listening...")
+	router := mux.NewRouter()
 
-	http.HandleFunc("/api/chat", controllers.Chat)
-	http.HandleFunc("/api/messages/get", controllers.GetMessages)
+	router.HandleFunc("/api/chat", controllers.Chat)
+	router.HandleFunc("/api/messages/get", controllers.GetMessages).Methods("GET")
 
-	log.Fatal(http.ListenAndServe(":"+os.Getenv("LISTENER_PORT"), nil))
+	router.Use(middlewares.HeaderMiddleware)
+
+	log.Fatal(http.ListenAndServe(":"+os.Getenv("LISTENER_PORT"), router))
 }
