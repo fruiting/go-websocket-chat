@@ -1,32 +1,24 @@
 package app
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 
+	"github.com/fruiting/go-chat/logger"
 	"github.com/gorilla/websocket"
 )
-
-// upgrader - websocket settings
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
 
 // rooms - map of rooms
 var rooms map[string]Room
 
 // reader - reads json with new message and writes it into the channel
-func reader(conn *websocket.Conn, messages chan Message, r *http.Request) {
+func reader(conn *websocket.Conn, messages chan Message, roomNumber string) {
 	message := Message{}
 	for {
 		err := conn.ReadJSON(&message)
 		if err != nil {
-			fmt.Println(err)
+			logger.Error("Unable to read message in room " + roomNumber + ". Reaseon: " + err.Error())
 		}
 
-		roomNumber := r.URL.Query()["room"][0]
 		message.Room = rooms[roomNumber]
 		message.Room.ID = roomNumber
 		messages <- message
@@ -62,22 +54,15 @@ func connectUser(connection *websocket.Conn, roomNumber string) {
 }
 
 // Listen function opens connection for users and listens any new messages from them
-func Listen(w http.ResponseWriter, r *http.Request) {
-	upgrader.CheckOrigin = func(r *http.Request) bool {
-		return true
-	}
-
+func Listen(upgrader websocket.Upgrader, roomNumber string, w http.ResponseWriter, r *http.Request) {
 	websocket, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		logger.Error("Unable to connect. Error: " + err.Error())
 	}
 
-	log.Println("Connected...")
-
-	roomNumber := r.URL.Query()["room"][0]
 	connectUser(websocket, roomNumber)
 	messages := make(chan Message)
-	go reader(websocket, messages, r)
+	go reader(websocket, messages, roomNumber)
 	writer(messages)
 }
 

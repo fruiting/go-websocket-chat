@@ -17,13 +17,12 @@ func SaveMessage(message Message) {
 	client.LPush("messages:"+message.Room.ID, string(messageJSON))
 }
 
-// GetMessages returns messages for room
+// GetMessagesSlice returns messages for room
 // @param roomID string Number of private chat room to get access to redis
 // @param count int64 Count of messages to return
 // @return []*Message Slice of messages
-func GetMessages(roomID string, count int64) []Message {
+func GetMessagesSlice(roomID string, count int64) []Message {
 	messagesSlice := make([]Message, count)
-
 	messages, _ := client.LRange("messages:"+roomID, 0, count-1).Result()
 	for _, messageJSON := range messages {
 		b := []byte(messageJSON)
